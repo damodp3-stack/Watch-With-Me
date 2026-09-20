@@ -20,11 +20,13 @@ export function sendSuccess<T>(
 export function sendError(
   res: Response,
   statusCode: number,
-  message: string
+  message: string,
+  extra?: Record<string, unknown>
 ) {
   return res.status(statusCode).json({
     success: false,
     message,
     data: null,
+    ...(extra || {}),
   });
 }

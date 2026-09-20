@@ -25,7 +25,7 @@ export const VideoPlayerModal: React.FC<{ mediaId: string; episodeId?: string }>
   mediaId,
   episodeId,
 }) => {
-  const { closeModal, recordWatchProgress, userProfile, showToast } = useApp();
+  const { closeModal, openTrailer, recordWatchProgress, userProfile, showToast } = useApp();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +35,7 @@ export const VideoPlayerModal: React.FC<{ mediaId: string; episodeId?: string }>
   const [sources, setSources] = useState<PlaybackSource[]>([]);
   const [subtitles, setSubtitles] = useState<SubtitleTrack[]>([]);
   const [activeSource, setActiveSource] = useState<PlaybackSource | null>(null);
+  const [loadingPlayback, setLoadingPlayback] = useState<boolean>(true);
 
   // Player state
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -79,14 +80,23 @@ export const VideoPlayerModal: React.FC<{ mediaId: string; episodeId?: string }>
         }
       }
 
-      mediaApi.getPlayback(mediaId, episodeId).then((pb) => {
-        if (!isMounted) return;
-        setSources(pb.sources);
-        setSubtitles(pb.subtitles);
-        if (pb.sources.length > 0) {
-          setActiveSource(pb.sources[0]);
-        }
-      });
+      mediaApi
+        .getPlayback(mediaId, episodeId)
+        .then((pb) => {
+          if (!isMounted) return;
+          setSources(pb.sources || []);
+          setSubtitles(pb.subtitles || []);
+          if (pb.sources && pb.sources.length > 0) {
+            setActiveSource(pb.sources[0]);
+          }
+          setLoadingPlayback(false);
+        })
+        .catch(() => {
+          if (!isMounted) return;
+          setSources([]);
+          setSubtitles([]);
+          setLoadingPlayback(false);
+        });
 
       // Check existing history to prompt resume
       mediaApi.getHistory().then((historyList) => {
@@ -298,6 +308,64 @@ export const VideoPlayerModal: React.FC<{ mediaId: string; episodeId?: string }>
     }
   };
 
+  if (loadingPlayback) {
+    return (
+      <div
+        id="video-player-loading-modal"
+        className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center space-y-4"
+      >
+        <div className="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-medium text-slate-400">Loading authorized stream...</p>
+      </div>
+    );
+  }
+
+  if (!loadingPlayback && sources.length === 0) {
+    return (
+      <div
+        id="video-player-unavailable-modal"
+        className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 select-none"
+      >
+        <div className="flex flex-col items-center justify-center p-6 sm:p-8 max-w-md w-full text-center space-y-5 bg-[#0e121a] border border-slate-800 rounded-3xl shadow-2xl">
+          <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <AlertCircle className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold font-heading text-white">Playback Unavailable</h3>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Watch With Me provides verified metadata for{' '}
+              <span className="text-white font-semibold">{media?.title || 'this title'}</span>.
+              Streaming playback is only offered for verified Creative Commons, public domain, and authorized media.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            {media?.trailerUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  closeModal();
+                  openTrailer(media.id);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-colors cursor-pointer"
+              >
+                Watch Trailer
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={closeModal}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm border border-slate-700 transition-colors cursor-pointer"
+            >
+              Close Player
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const streamUrl = activeSource?.streamUrl || activeSource?.url || '';
+
   return (
     <div
       ref={containerRef}
@@ -310,7 +378,7 @@ export const VideoPlayerModal: React.FC<{ mediaId: string; episodeId?: string }>
       <video
         ref={videoRef}
         id="html5-video-player"
-        src={activeSource?.url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
+        src={streamUrl}
         autoPlay
         playsInline
         onTimeUpdate={() => {

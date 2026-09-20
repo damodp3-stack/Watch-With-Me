@@ -18,10 +18,21 @@ export class MockProvider implements IMediaProvider {
   isConfigured = true;
   description = 'Development fallback provider serving demo titles, sample Creative Commons video streams, and deterministic mock datasets.';
   capabilities: ProviderCapabilities = {
+    metadata: true,
+    search: true,
     canSearch: true,
     canFilter: true,
-    hasSubtitles: true,
+    movies: true,
+    series: true,
+    anime: true,
+    seasons: true,
+    episodes: true,
+    playback: true,
     canStream: true,
+    subtitles: true,
+    hasSubtitles: true,
+    trending: true,
+    recommendations: true,
     supportedTypes: ['movie', 'series', 'anime'],
   };
 

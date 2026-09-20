@@ -151,11 +151,22 @@ export const MovieDetailsModal: React.FC<{ mediaId: string }> = ({ mediaId }) =>
             <div className="p-6 sm:p-8 pt-10 space-y-8">
               {/* Primary action controls */}
               <div className="flex flex-wrap items-center gap-3 pb-6 border-b border-slate-800">
-                <PlayButton
-                  onClick={() => openPlayer(media.id)}
-                  label="Play Movie"
-                  size="lg"
-                />
+                {Boolean(
+                  (media.playbackSources && media.playbackSources.length > 0) ||
+                  media.id.startsWith('open-') ||
+                  media.id.startsWith('mock-')
+                ) ? (
+                  <PlayButton
+                    onClick={() => openPlayer(media.id)}
+                    label="Play Movie"
+                    size="lg"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-slate-400 text-xs font-medium">
+                    <Info className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Playback unavailable for this title (Metadata only)</span>
+                  </div>
+                )}
 
                 {media.trailerUrl && (
                   <button

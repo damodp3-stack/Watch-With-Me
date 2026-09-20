@@ -3,6 +3,7 @@ import {
   Calendar,
   Clock,
   Film,
+  Info,
   Layers,
   Play,
   Share2,
@@ -54,9 +55,46 @@ export const SeriesDetailsModal: React.FC<{ mediaId: string }> = ({ mediaId }) =
     };
   }, [mediaId]);
 
+  // Dynamically load episodes if not populated (TMDB and episodic series workflow)
+  useEffect(() => {
+    if (!media) return;
+    const s = media.seasons?.find((x) => x.seasonNumber === selectedSeasonNumber);
+    if (s && (!s.episodes || s.episodes.length === 0)) {
+      mediaApi
+        .getEpisodes(media.id, selectedSeasonNumber)
+        .then((episodes) => {
+          if (episodes && episodes.length > 0) {
+            setMedia((prev) => {
+              if (!prev || !prev.seasons) return prev;
+              return {
+                ...prev,
+                seasons: prev.seasons.map((season) =>
+                  season.seasonNumber === selectedSeasonNumber
+                    ? { ...season, episodes }
+                    : season
+                ),
+              };
+            });
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load episodes:', err);
+        });
+    }
+  }, [media?.id, selectedSeasonNumber]);
+
   if (!media && !loading) return null;
 
   const currentSeason = media?.seasons?.find((s) => s.seasonNumber === selectedSeasonNumber);
+
+  const hasPlayableStream = Boolean(
+    media && (
+      (media.playbackSources && media.playbackSources.length > 0) ||
+      media.id.startsWith('open-') ||
+      media.id.startsWith('mock-') ||
+      Boolean(currentSeason?.episodes.some((e) => e.playbackSources && e.playbackSources.length > 0))
+    )
+  );
 
   return (
     <div
@@ -137,14 +175,21 @@ export const SeriesDetailsModal: React.FC<{ mediaId: string }> = ({ mediaId }) =
             <div className="p-6 sm:p-8 pt-10 space-y-8">
               {/* Primary action row */}
               <div className="flex flex-wrap items-center gap-3 pb-6 border-b border-slate-800">
-                <PlayButton
-                  onClick={() => {
-                    const firstEp = currentSeason?.episodes[0];
-                    openPlayer(media.id, firstEp?.id);
-                  }}
-                  label={`Watch S${selectedSeasonNumber} E1`}
-                  size="lg"
-                />
+                {hasPlayableStream ? (
+                  <PlayButton
+                    onClick={() => {
+                      const firstEp = currentSeason?.episodes[0];
+                      openPlayer(media.id, firstEp?.id);
+                    }}
+                    label={`Watch S${selectedSeasonNumber} E1`}
+                    size="lg"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-slate-400 text-xs font-medium">
+                    <Info className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Playback unavailable for this series (Metadata only)</span>
+                  </div>
+                )}
 
                 {media.trailerUrl && (
                   <button

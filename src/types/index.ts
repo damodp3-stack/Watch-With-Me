@@ -5,10 +5,21 @@
 export type MediaType = 'movie' | 'series' | 'anime';
 
 export interface ProviderCapabilities {
-  canSearch: boolean;
-  canFilter: boolean;
-  hasSubtitles: boolean;
-  canStream: boolean;
+  metadata?: boolean;
+  search: boolean;
+  canSearch?: boolean; // backwards compatibility alias
+  canFilter?: boolean;
+  movies?: boolean;
+  series?: boolean;
+  anime?: boolean;
+  seasons?: boolean;
+  episodes?: boolean;
+  playback: boolean;
+  canStream?: boolean; // backwards compatibility alias
+  subtitles: boolean;
+  hasSubtitles?: boolean; // backwards compatibility alias
+  trending?: boolean;
+  recommendations?: boolean;
   supportedTypes: MediaType[];
 }
 

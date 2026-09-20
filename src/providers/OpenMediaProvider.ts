@@ -479,10 +479,21 @@ export class OpenMediaProvider implements IMediaProvider {
   isConfigured = true;
   description = 'Curated collection of fully legitimate, Creative Commons and public domain films, episodic web series, and anime with verified stream sources and subtitles.';
   capabilities: ProviderCapabilities = {
+    metadata: true,
+    search: true,
     canSearch: true,
     canFilter: true,
-    hasSubtitles: true,
+    movies: true,
+    series: true,
+    anime: true,
+    seasons: true,
+    episodes: true,
+    playback: true,
     canStream: true,
+    subtitles: true,
+    hasSubtitles: true,
+    trending: true,
+    recommendations: true,
     supportedTypes: ['movie', 'series', 'anime'],
   };
 

@@ -95,6 +95,23 @@ describe('Provider Contract & Implementations', () => {
       const unconfigured = new TmdbProvider('');
       assert.equal(unconfigured.isConfigured, false);
       assert.equal(unconfigured.capabilities.canStream, false);
+      assert.equal(unconfigured.capabilities.playback, false);
+      assert.equal(unconfigured.capabilities.metadata, true);
+      assert.equal(unconfigured.capabilities.seasons, true);
+      assert.equal(unconfigured.capabilities.episodes, true);
+    });
+
+    test('throws explicit error when attempting query on unconfigured instance', async () => {
+      const unconfigured = new TmdbProvider('');
+      await assert.rejects(
+        async () => {
+          await unconfigured.getMovies();
+        },
+        {
+          name: 'Error',
+          message: /TMDB Provider is not configured/,
+        }
+      );
     });
 
     test('returns honest capability for playback (metadata only)', async () => {
@@ -112,16 +129,50 @@ describe('Provider Contract & Implementations', () => {
       const openMedia = list.find((p) => p.id === 'open-media');
       assert.ok(openMedia);
       assert.equal(openMedia.isConfigured, true);
+      assert.equal(openMedia?.capabilities?.playback, true);
+      assert.equal(openMedia?.capabilities?.metadata, true);
+      assert.equal(openMedia?.capabilities?.episodes, true);
     });
 
-    test('active provider switching functions properly', () => {
-      const ok = providerManager.setActiveProvider('mock-cinema-provider');
+    test('active provider switching functions properly with aliases', () => {
+      const ok = providerManager.setActiveProvider('mock');
       assert.equal(ok, true);
       assert.equal(providerManager.getActiveProvider().id, 'mock-cinema-provider');
 
       // Switch back to open-media
       providerManager.setActiveProvider('open-media');
       assert.equal(providerManager.getActiveProvider().id, 'open-media');
+    });
+
+    test('strict mode: does not silently fall back to mock when primary is unconfigured', async () => {
+      providerManager.setActiveProvider('tmdb');
+      providerManager.setMockFallbackEnabled(false);
+
+      await assert.rejects(
+        async () => {
+          await providerManager.getMovies();
+        },
+        {
+          name: 'Error',
+          message: /not configured/,
+        }
+      );
+
+      // Restore open-media as active
+      providerManager.setActiveProvider('open-media');
+    });
+
+    test('routes cross-provider playback for open-source titles', async () => {
+      // Sintel TMDB ID: tmdb-m-45745 -> maps to open-m-1
+      const playback = await providerManager.getPlayback('tmdb-m-45745');
+      assert.ok(playback.sources.length > 0, 'Cross-provider mapped title must return playback sources');
+      assert.ok(playback.sources[0].streamUrl.toLowerCase().includes('sintel'), 'Stream should be for Sintel');
+    });
+
+    test('returns empty sources for unmapped TMDB titles (honest capability)', async () => {
+      const playback = await providerManager.getPlayback('tmdb-m-9999999');
+      assert.deepEqual(playback.sources, []);
+      assert.deepEqual(playback.subtitles, []);
     });
 
     test('fetches trending and recommendations via manager', async () => {

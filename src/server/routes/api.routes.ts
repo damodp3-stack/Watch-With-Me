@@ -66,6 +66,7 @@ apiRouter.get('/config', (req, res) => {
 
 // Provider Registry & Selection
 apiRouter.get('/providers', getProviders);
+apiRouter.get('/system/providers', getProviders);
 apiRouter.post('/providers/active', setActiveProvider);
 
 // Media Catalog Endpoints

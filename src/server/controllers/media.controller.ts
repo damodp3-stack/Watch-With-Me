@@ -40,13 +40,24 @@ function parseFilters(query: Request['query']): Partial<FilterState> {
   return filters;
 }
 
+function handleProviderError(res: Response, error: unknown) {
+  const msg = (error as Error).message || 'Provider operation failed';
+  if (msg.includes('not configured')) {
+    return sendError(res, 400, msg, { code: 'PROVIDER_NOT_CONFIGURED' });
+  }
+  if (msg.includes('TMDB_API_KEY') || msg.includes('TMDB API') || msg.includes('upstream')) {
+    return sendError(res, 502, msg, { code: 'UPSTREAM_PROVIDER_ERROR' });
+  }
+  return sendError(res, 500, msg);
+}
+
 export async function getMovies(req: Request, res: Response) {
   try {
     const filters = parseFilters(req.query);
     const movies = await providerManager.getMovies(filters);
     return sendSuccess(res, movies, undefined, { total: movies.length });
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -61,7 +72,7 @@ export async function getMovieById(req: Request, res: Response) {
     }
     return sendSuccess(res, item);
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -71,7 +82,7 @@ export async function getSeries(req: Request, res: Response) {
     const series = await providerManager.getSeries(filters);
     return sendSuccess(res, series, undefined, { total: series.length });
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -86,7 +97,7 @@ export async function getSeriesById(req: Request, res: Response) {
     }
     return sendSuccess(res, item);
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -96,7 +107,7 @@ export async function getAnime(req: Request, res: Response) {
     const anime = await providerManager.getAnime(filters);
     return sendSuccess(res, anime, undefined, { total: anime.length });
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -111,7 +122,7 @@ export async function getAnimeById(req: Request, res: Response) {
     }
     return sendSuccess(res, item);
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -126,7 +137,7 @@ export async function getMediaById(req: Request, res: Response) {
     }
     return sendSuccess(res, item);
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -137,7 +148,7 @@ export async function searchMedia(req: Request, res: Response) {
     const results = await providerManager.search(q, filters);
     return sendSuccess(res, results, undefined, { total: results.length });
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -146,7 +157,7 @@ export async function getTrending(req: Request, res: Response) {
     const trending = await providerManager.getTrending();
     return sendSuccess(res, trending, undefined, { total: trending.length });
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -157,7 +168,7 @@ export async function getRecommendations(req: Request, res: Response) {
     const recs = await providerManager.getRecommendations(mediaId, language);
     return sendSuccess(res, recs, undefined, { total: recs.length });
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -169,7 +180,7 @@ export async function getSeasons(req: Request, res: Response) {
     const seasons = await providerManager.getSeasons(id);
     return sendSuccess(res, seasons);
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -184,7 +195,7 @@ export async function getEpisodes(req: Request, res: Response) {
     const episodes = await providerManager.getEpisodes(id, sNum);
     return sendSuccess(res, episodes);
   } catch (error) {
-    return sendError(res, 500, (error as Error).message);
+    return handleProviderError(res, error);
   }
 }
 
@@ -195,9 +206,16 @@ export async function getPlayback(req: Request, res: Response) {
     if (!id) return sendError(res, 400, 'Media ID is required');
 
     const playback = await providerManager.getPlayback(id, episodeId);
+    if (!playback || playback.sources.length === 0) {
+      return sendError(res, 404, 'Playback is unavailable for this title.', {
+        code: 'PLAYBACK_UNAVAILABLE',
+        mediaId: id,
+        episodeId,
+      });
+    }
     return sendSuccess(res, playback);
   } catch (error) {
-    return sendError(res, 404, (error as Error).message);
+    return sendError(res, 404, (error as Error).message, { code: 'PLAYBACK_ERROR' });
   }
 }
 
@@ -218,8 +236,11 @@ export function getProviders(req: Request, res: Response) {
   try {
     const providers = providerManager.getProviders();
     const active = providerManager.getActiveProvider();
+    const playback = providerManager.getPlaybackProvider();
     return sendSuccess(res, {
       activeProviderId: active.id,
+      playbackProviderId: playback.id,
+      mockFallbackEnabled: providerManager.isMockFallbackEnabled(),
       providers,
     });
   } catch (error) {
