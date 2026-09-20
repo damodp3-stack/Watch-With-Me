@@ -200,7 +200,7 @@ export const VideoPlayerModal: React.FC<{ mediaId: string; episodeId?: string }>
     } else {
       // Benchmark dialogue subtitles if not individually segmented
       const sampleDialogue = [
-        { start: 2, end: 7, text: `[${media?.title || 'Cinema'}] - Welcome to Streamora presentation.` },
+        { start: 2, end: 7, text: `[${media?.title || 'Cinema'}] - Welcome to Watch With Me presentation.` },
         { start: 8, end: 14, text: `In a world transformed by courage, every decision shapes destiny.` },
         { start: 16, end: 23, text: `Listen carefully... the truth isn't what it seems.` },
         { start: 26, end: 32, text: `We fight for what matters most: our family and our people.` },

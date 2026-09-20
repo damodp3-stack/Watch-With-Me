@@ -19,6 +19,7 @@ import {
 import { APP_CONFIG, SUPPORTED_LANGUAGES } from '../config/app.config';
 import { useApp } from '../context/AppContext';
 import { providerManager } from '../providers/ProviderManager';
+import { mediaApi } from '../services/api';
 
 export const ProfileView: React.FC = () => {
   const {
@@ -42,15 +43,20 @@ export const ProfileView: React.FC = () => {
     showToast(`Updated preferred languages`, 'info');
   };
 
-  const handleProviderSwitch = (id: string) => {
-    const success = providerManager.setActiveProvider(id);
+  const handleProviderSwitch = async (id: string) => {
+    const success = await mediaApi.setActiveProvider(id);
     if (success) {
       setActiveProvId(id);
       showToast(`Switched active media provider to: ${id}`, 'success');
+      // refresh provider list
+      const info = await mediaApi.getProviders();
+      setProvidersList(info.providers);
+      setActiveProvId(info.activeProviderId);
     }
   };
 
   const handleClearCache = () => {
+    localStorage.removeItem('watchwithme_recent_searches');
     localStorage.removeItem('streamora_recent_searches');
     showToast('Search cache and temporary store cleared', 'success');
   };
@@ -222,7 +228,7 @@ export const ProfileView: React.FC = () => {
               <span>Provider Architecture (ProviderManager)</span>
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Streamora adheres to a strict provider-agnostic abstraction layer. Front-end components
+              Watch With Me adheres to a strict provider-agnostic abstraction layer. Front-end components
               never communicate directly with hardcoded media endpoints. All requests pass through
               the <code className="text-amber-400">IMediaProvider</code> gateway.
             </p>

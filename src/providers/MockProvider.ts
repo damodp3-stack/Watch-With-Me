@@ -1,13 +1,29 @@
 import { ALL_MEDIA, MOCK_ANIME, MOCK_MOVIES, MOCK_SERIES } from '../data/mockData';
-import { Episode, FilterState, MediaItem, PlaybackSource, Season, SubtitleTrack } from '../types';
+import {
+  Episode,
+  FilterState,
+  MediaItem,
+  PlaybackSource,
+  ProviderCapabilities,
+  Season,
+  SubtitleTrack,
+} from '../types';
 import { IMediaProvider } from './MediaProvider';
 
 export class MockProvider implements IMediaProvider {
   id = 'mock-cinema-provider';
-  name = 'Streamora Core Catalog (Licensed & Open Media)';
+  name = 'Watch With Me Development Catalog (Offline Mock)';
   version = '1.0.0';
   isAuthorized = true;
-  description = 'Default provider serving vetted, licensed demo titles, Creative Commons video streams, and open movie benchmarks.';
+  isConfigured = true;
+  description = 'Development fallback provider serving demo titles, sample Creative Commons video streams, and deterministic mock datasets.';
+  capabilities: ProviderCapabilities = {
+    canSearch: true,
+    canFilter: true,
+    hasSubtitles: true,
+    canStream: true,
+    supportedTypes: ['movie', 'series', 'anime'],
+  };
 
   private filterList(items: MediaItem[], filters?: Partial<FilterState>): MediaItem[] {
     if (!filters) return items;
@@ -106,6 +122,20 @@ export class MockProvider implements IMediaProvider {
 
   async getAnime(filters?: Partial<FilterState>): Promise<MediaItem[]> {
     return this.filterList(MOCK_ANIME, filters);
+  }
+
+  async getTrending(): Promise<MediaItem[]> {
+    return ALL_MEDIA.filter((item) => item.isTrending || item.rating >= 8.5);
+  }
+
+  async getRecommendations(mediaId?: string, language?: string): Promise<MediaItem[]> {
+    if (language) {
+      const match = ALL_MEDIA.filter((m) =>
+        m.languages.map((l) => l.toLowerCase()).includes(language.toLowerCase())
+      );
+      if (match.length > 0) return match.slice(0, 4);
+    }
+    return ALL_MEDIA.filter((m) => m.id !== mediaId).slice(0, 4);
   }
 
   async getSeasons(seriesId: string): Promise<Season[]> {

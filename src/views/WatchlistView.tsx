@@ -29,7 +29,7 @@ export const WatchlistView: React.FC = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(watchlist, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `streamora-watchlist-${Date.now()}.json`);
+    downloadAnchor.setAttribute('download', `watchwithme-watchlist-${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -45,7 +45,7 @@ export const WatchlistView: React.FC = () => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (Array.isArray(parsed)) {
-          localStorage.setItem('streamora_watchlist', JSON.stringify(parsed));
+          localStorage.setItem('watchwithme_watchlist', JSON.stringify(parsed));
           window.location.reload();
         }
       } catch (err) {

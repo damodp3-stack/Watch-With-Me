@@ -1,5 +1,5 @@
 {
-  "name": "Streamora",
+  "name": "Watch With Me",
   "description": "Modern multilingual movie, series, and anime discovery and streaming platform with cinematic UI, advanced multi-language filters, and provider architecture.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

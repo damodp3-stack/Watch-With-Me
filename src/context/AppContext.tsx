@@ -128,7 +128,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
 
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('streamora_profile');
+    const saved =
+      localStorage.getItem('watchwithme_profile') ||
+      localStorage.getItem('streamora_profile');
     return saved ? JSON.parse(saved) : DEFAULT_USER;
   });
 
@@ -267,7 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         preferences: { ...prev.preferences, ...prefs },
       };
-      localStorage.setItem('streamora_profile', JSON.stringify(updated));
+      localStorage.setItem('watchwithme_profile', JSON.stringify(updated));
       return updated;
     });
   };

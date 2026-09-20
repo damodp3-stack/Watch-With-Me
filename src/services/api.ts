@@ -6,11 +6,19 @@ import {
   FilterState,
   MediaItem,
   PlaybackSource,
+  ProviderInfo,
   Season,
   SubtitleTrack,
   WatchHistoryItem,
   WatchlistItem,
 } from '../types';
+
+const STORAGE_KEYS = {
+  watchlist: 'watchwithme_watchlist',
+  legacyWatchlist: 'streamora_watchlist',
+  history: 'watchwithme_history',
+  legacyHistory: 'streamora_history',
+};
 
 class MediaApiService {
   private baseUrl = APP_CONFIG.apiBaseUrl;
@@ -23,22 +31,73 @@ class MediaApiService {
       }
       return await res.json();
     } catch (err) {
-      console.warn(`[Streamora API] Falling back to providerManager for: ${url}`, err);
+      console.warn(`[Watch With Me API] Falling back to providerManager for: ${url}`, err);
       throw err;
+    }
+  }
+
+  async getHealth(): Promise<any> {
+    try {
+      const res = await this.fetchJson<ApiResponse<any>>(`${this.baseUrl}/health`);
+      return res.data;
+    } catch {
+      const active = providerManager.getActiveProvider();
+      return {
+        status: 'ok',
+        app: APP_CONFIG.name,
+        version: APP_CONFIG.version,
+        activeProvider: {
+          id: active.id,
+          name: active.name,
+          isConfigured: active.isConfigured,
+          capabilities: active.capabilities,
+        },
+      };
+    }
+  }
+
+  async getProviders(): Promise<{ activeProviderId: string; providers: ProviderInfo[] }> {
+    try {
+      const res = await this.fetchJson<ApiResponse<{ activeProviderId: string; providers: ProviderInfo[] }>>(
+        `${this.baseUrl}/providers`
+      );
+      return res.data;
+    } catch {
+      return {
+        activeProviderId: providerManager.getActiveProvider().id,
+        providers: providerManager.getProviders(),
+      };
+    }
+  }
+
+  async setActiveProvider(providerId: string): Promise<boolean> {
+    try {
+      const res = await this.fetchJson<ApiResponse<{ activeProviderId: string }>>(
+        `${this.baseUrl}/providers/active`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerId }),
+        }
+      );
+      return res.success;
+    } catch {
+      return providerManager.setActiveProvider(providerId);
     }
   }
 
   async getMovies(filters?: Partial<FilterState>): Promise<MediaItem[]> {
     try {
       const params = new URLSearchParams();
-      if (filters?.languages?.length) params.set('language', filters.languages.join(','));
-      if (filters?.genres?.length) params.set('genre', filters.genres.join(','));
+      if (filters?.languages?.length) params.set('languages', filters.languages.join(','));
+      if (filters?.genres?.length) params.set('genres', filters.genres.join(','));
       if (filters?.minRating) params.set('minRating', filters.minRating.toString());
-      if (filters?.sortBy) params.set('sort', filters.sortBy);
+      if (filters?.sortBy) params.set('sortBy', filters.sortBy);
       if (filters?.yearRange) {
-        params.set('yearMin', filters.yearRange[0].toString());
-        params.set('yearMax', filters.yearRange[1].toString());
+        params.set('minYear', filters.yearRange[0].toString());
+        params.set('maxYear', filters.yearRange[1].toString());
       }
+      if (filters?.country) params.set('country', filters.country);
       const res = await this.fetchJson<ApiResponse<MediaItem[]>>(`${this.baseUrl}/movies?${params.toString()}`);
       return res.data;
     } catch {
@@ -58,10 +117,15 @@ class MediaApiService {
   async getSeries(filters?: Partial<FilterState>): Promise<MediaItem[]> {
     try {
       const params = new URLSearchParams();
-      if (filters?.languages?.length) params.set('language', filters.languages.join(','));
-      if (filters?.genres?.length) params.set('genre', filters.genres.join(','));
+      if (filters?.languages?.length) params.set('languages', filters.languages.join(','));
+      if (filters?.genres?.length) params.set('genres', filters.genres.join(','));
       if (filters?.minRating) params.set('minRating', filters.minRating.toString());
-      if (filters?.sortBy) params.set('sort', filters.sortBy);
+      if (filters?.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters?.yearRange) {
+        params.set('minYear', filters.yearRange[0].toString());
+        params.set('maxYear', filters.yearRange[1].toString());
+      }
+      if (filters?.country) params.set('country', filters.country);
       const res = await this.fetchJson<ApiResponse<MediaItem[]>>(`${this.baseUrl}/series?${params.toString()}`);
       return res.data;
     } catch {
@@ -72,10 +136,15 @@ class MediaApiService {
   async getAnime(filters?: Partial<FilterState>): Promise<MediaItem[]> {
     try {
       const params = new URLSearchParams();
-      if (filters?.languages?.length) params.set('language', filters.languages.join(','));
-      if (filters?.genres?.length) params.set('genre', filters.genres.join(','));
+      if (filters?.languages?.length) params.set('languages', filters.languages.join(','));
+      if (filters?.genres?.length) params.set('genres', filters.genres.join(','));
       if (filters?.minRating) params.set('minRating', filters.minRating.toString());
-      if (filters?.sortBy) params.set('sort', filters.sortBy);
+      if (filters?.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters?.yearRange) {
+        params.set('minYear', filters.yearRange[0].toString());
+        params.set('maxYear', filters.yearRange[1].toString());
+      }
+      if (filters?.country) params.set('country', filters.country);
       const res = await this.fetchJson<ApiResponse<MediaItem[]>>(`${this.baseUrl}/anime?${params.toString()}`);
       return res.data;
     } catch {
@@ -87,11 +156,11 @@ class MediaApiService {
     try {
       const params = new URLSearchParams();
       if (query) params.set('q', query);
-      if (filters?.contentType) params.set('type', filters.contentType);
-      if (filters?.languages?.length) params.set('language', filters.languages.join(','));
-      if (filters?.genres?.length) params.set('genre', filters.genres.join(','));
+      if (filters?.contentType) params.set('contentType', filters.contentType);
+      if (filters?.languages?.length) params.set('languages', filters.languages.join(','));
+      if (filters?.genres?.length) params.set('genres', filters.genres.join(','));
       if (filters?.minRating) params.set('minRating', filters.minRating.toString());
-      if (filters?.sortBy) params.set('sort', filters.sortBy);
+      if (filters?.sortBy) params.set('sortBy', filters.sortBy);
 
       const res = await this.fetchJson<ApiResponse<MediaItem[]>>(`${this.baseUrl}/search?${params.toString()}`);
       return res.data;
@@ -105,28 +174,41 @@ class MediaApiService {
       const res = await this.fetchJson<ApiResponse<MediaItem[]>>(`${this.baseUrl}/trending`);
       return res.data;
     } catch {
-      const all = await providerManager.search('');
-      return all.filter((m) => m.isTrending || m.rating >= 8.5);
+      return providerManager.getTrending();
     }
   }
 
-  async getRecommendations(mediaId?: string): Promise<MediaItem[]> {
+  async getRecommendations(mediaId?: string, language?: string): Promise<MediaItem[]> {
     try {
-      const url = mediaId ? `${this.baseUrl}/recommendations?mediaId=${mediaId}` : `${this.baseUrl}/recommendations`;
+      const params = new URLSearchParams();
+      if (mediaId) params.set('mediaId', mediaId);
+      if (language) params.set('language', language);
+      const url = `${this.baseUrl}/recommendations?${params.toString()}`;
       const res = await this.fetchJson<ApiResponse<MediaItem[]>>(url);
       return res.data;
     } catch {
-      const all = await providerManager.search('');
-      return all.slice(0, 10);
+      return providerManager.getRecommendations(mediaId, language);
     }
   }
 
   async getSeasons(seriesId: string): Promise<Season[]> {
-    return providerManager.getSeasons(seriesId);
+    try {
+      const res = await this.fetchJson<ApiResponse<Season[]>>(`${this.baseUrl}/series/${seriesId}/seasons`);
+      return res.data;
+    } catch {
+      return providerManager.getSeasons(seriesId);
+    }
   }
 
   async getEpisodes(seriesId: string, seasonNumber: number): Promise<Episode[]> {
-    return providerManager.getEpisodes(seriesId, seasonNumber);
+    try {
+      const res = await this.fetchJson<ApiResponse<Episode[]>>(
+        `${this.baseUrl}/series/${seriesId}/seasons/${seasonNumber}/episodes`
+      );
+      return res.data;
+    } catch {
+      return providerManager.getEpisodes(seriesId, seasonNumber);
+    }
   }
 
   async getPlayback(
@@ -156,13 +238,15 @@ class MediaApiService {
     }
   }
 
-  // Watchlist
+  // Watchlist with localStorage fallback and migration
   async getWatchlist(): Promise<WatchlistItem[]> {
     try {
       const res = await this.fetchJson<ApiResponse<WatchlistItem[]>>(`${this.baseUrl}/watchlist`);
       return res.data;
     } catch {
-      const local = localStorage.getItem('streamora_watchlist');
+      const local =
+        localStorage.getItem(STORAGE_KEYS.watchlist) ||
+        localStorage.getItem(STORAGE_KEYS.legacyWatchlist);
       return local ? JSON.parse(local) : [];
     }
   }
@@ -187,7 +271,7 @@ class MediaApiService {
       };
       const list = await this.getWatchlist();
       list.unshift(item);
-      localStorage.setItem('streamora_watchlist', JSON.stringify(list));
+      localStorage.setItem(STORAGE_KEYS.watchlist, JSON.stringify(list));
       return item;
     }
   }
@@ -197,17 +281,19 @@ class MediaApiService {
       await this.fetchJson(`${this.baseUrl}/watchlist/${mediaIdOrId}`, { method: 'DELETE' });
     } catch {
       const list = (await this.getWatchlist()).filter((w) => w.id !== mediaIdOrId && w.mediaId !== mediaIdOrId);
-      localStorage.setItem('streamora_watchlist', JSON.stringify(list));
+      localStorage.setItem(STORAGE_KEYS.watchlist, JSON.stringify(list));
     }
   }
 
-  // History & Continue Watching
+  // History & Continue Watching with localStorage fallback and migration
   async getHistory(): Promise<WatchHistoryItem[]> {
     try {
       const res = await this.fetchJson<ApiResponse<WatchHistoryItem[]>>(`${this.baseUrl}/history`);
       return res.data;
     } catch {
-      const local = localStorage.getItem('streamora_history');
+      const local =
+        localStorage.getItem(STORAGE_KEYS.history) ||
+        localStorage.getItem(STORAGE_KEYS.legacyHistory);
       return local ? JSON.parse(local) : [];
     }
   }
@@ -251,7 +337,7 @@ class MediaApiService {
         (h) => !(h.mediaId === params.mediaId && (params.episodeId ? h.episodeId === params.episodeId : true))
       );
       list.unshift(record);
-      localStorage.setItem('streamora_history', JSON.stringify(list));
+      localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(list));
       return record;
     }
   }
@@ -260,7 +346,8 @@ class MediaApiService {
     try {
       await this.fetchJson(`${this.baseUrl}/history`, { method: 'DELETE' });
     } catch {
-      localStorage.removeItem('streamora_history');
+      localStorage.removeItem(STORAGE_KEYS.history);
+      localStorage.removeItem(STORAGE_KEYS.legacyHistory);
     }
   }
 
@@ -269,7 +356,7 @@ class MediaApiService {
       await this.fetchJson(`${this.baseUrl}/history/${id}`, { method: 'DELETE' });
     } catch {
       const list = (await this.getHistory()).filter((h) => h.id !== id);
-      localStorage.setItem('streamora_history', JSON.stringify(list));
+      localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(list));
     }
   }
 }

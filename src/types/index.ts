@@ -1,8 +1,26 @@
 /**
- * Normalized Data Architecture & Types for Streamora
+ * Normalized Data Architecture & Types for Watch With Me
  */
 
 export type MediaType = 'movie' | 'series' | 'anime';
+
+export interface ProviderCapabilities {
+  canSearch: boolean;
+  canFilter: boolean;
+  hasSubtitles: boolean;
+  canStream: boolean;
+  supportedTypes: MediaType[];
+}
+
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  version: string;
+  isAuthorized: boolean;
+  isConfigured: boolean;
+  description: string;
+  capabilities?: ProviderCapabilities;
+}
 
 export interface CastMember {
   name: string;

@@ -15,7 +15,7 @@ export const DEMO_SUBTITLES = [
     id: 'sub-en',
     language: 'English',
     label: 'English [CC]',
-    src: 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A1%0A00:00:01.000%20-->%2000:00:05.000%0AWelcome%20to%20Streamora%20Cinematic%20Playback%0A%0A2%0A00:00:06.000%20-->%2000:00:12.000%0AEnjoy%20multilingual%20discovery%20and%20crystal%20clear%20subtitles.',
+    src: 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A1%0A00:00:01.000%20-->%2000:00:05.000%0AWelcome%20to%20Watch%20With%20Me%20Cinematic%20Playback%0A%0A2%0A00:00:06.000%20-->%2000:00:12.000%0AEnjoy%20multilingual%20discovery%20and%20crystal%20clear%20subtitles.',
     format: 'vtt' as const,
     isDefault: true,
   },

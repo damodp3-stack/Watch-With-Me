@@ -14,8 +14,10 @@ export const SearchModal: React.FC = () => {
 
   // Local storage recent searches
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    const saved = localStorage.getItem('streamora_recent_searches');
-    return saved ? JSON.parse(saved) : ['Leo', 'Kalki 2898 AD', 'Kamal Haasan', 'Tamil Action', 'Jujutsu Kaisen'];
+    const saved =
+      localStorage.getItem('watchwithme_recent_searches') ||
+      localStorage.getItem('streamora_recent_searches');
+    return saved ? JSON.parse(saved) : ['Sintel', 'Big Buck Bunny', 'Tears of Steel', 'Caminandes', 'Senyuu'];
   });
 
   const trendingSearches = [
@@ -65,7 +67,7 @@ export const SearchModal: React.FC = () => {
     if (query.trim() && !recentSearches.includes(query.trim())) {
       const updated = [query.trim(), ...recentSearches.slice(0, 7)];
       setRecentSearches(updated);
-      localStorage.setItem('streamora_recent_searches', JSON.stringify(updated));
+      localStorage.setItem('watchwithme_recent_searches', JSON.stringify(updated));
     }
     setIsSearchOpen(false);
     openMediaDetails(item);
@@ -73,6 +75,7 @@ export const SearchModal: React.FC = () => {
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
+    localStorage.removeItem('watchwithme_recent_searches');
     localStorage.removeItem('streamora_recent_searches');
   };
 

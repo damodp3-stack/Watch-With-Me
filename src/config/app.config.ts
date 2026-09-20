@@ -35,16 +35,16 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG: AppConfig = {
-  name: 'Streamora',
-  shortName: 'Streamora',
+  name: 'Watch With Me',
+  shortName: 'WatchWithMe',
   tagline: 'Multilingual Movie, Series & Anime Discovery',
   description: 'A modern, cinematic streaming discovery platform supporting movies, TV series, and anime across global and regional languages.',
   version: '1.0.0',
-  author: 'Streamora Engineering',
-  supportEmail: 'support@streamora.example.com',
-  dmcaEmail: 'copyright@streamora.example.com',
-  legalContactEmail: 'legal@streamora.example.com',
-  copyrightNotice: '© 2026 Streamora. All rights reserved. Authorized Media Discovery & Streaming.',
+  author: 'Watch With Me Engineering',
+  supportEmail: 'support@watchwithme.example.com',
+  dmcaEmail: 'copyright@watchwithme.example.com',
+  legalContactEmail: 'legal@watchwithme.example.com',
+  copyrightNotice: '© 2026 Watch With Me. All rights reserved. Authorized Media Discovery & Streaming.',
   defaultTheme: 'dark',
   apiBaseUrl: '/api',
   links: {
