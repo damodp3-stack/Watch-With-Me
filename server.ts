@@ -119,6 +119,19 @@ app.get('/api/movies', async (req, res) => {
   }
 });
 
+app.get('/api/media/:id', async (req, res) => {
+  try {
+    const item = await providerManager.getDetails(req.params.id);
+    if (!item) {
+      res.status(404).json({ success: false, message: 'Media not found' });
+      return;
+    }
+    res.json({ success: true, data: item });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+});
+
 app.get('/api/movies/:id', async (req, res) => {
   try {
     const item = await providerManager.getDetails(req.params.id);
